@@ -1,0 +1,22 @@
+---
+- name: Determine server and client flags
+  set_fact:
+    openvpn_enable:
+      server: "{{ inventory_hostname == openvpn_server }}"
+      client: "{{ inventory_hostname in openvpn_clients }}"
+
+- name: centos, RHEL | Install EPEL
+  package:
+    name: epel-release
+  when: ansible_os_family == "RedHat" or ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+
+- name: Install common packages
+  package:
+    name: openvpn
+    update_cache: yes
+
+- include_tasks: server.yml
+  when: openvpn_enable.server
+
+- include_tasks: client.yml
+  when: openvpn_enable.client

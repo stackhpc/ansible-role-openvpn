@@ -1,0 +1,30 @@
+---
+
+- debug:
+    var: openvpn_enable
+
+- name: Copy over client configuration
+  template:
+    src: client.conf.j2
+    dest: "{{ openvpn_dir }}/{{ inventory_hostname }}.conf"
+  notify: restart openvpn
+
+- name: Copy client keys to hosts
+  copy:
+    src: "{{ openvpn_client_certs_dir }}/{{ inventory_hostname }}.{{ item }}"
+    dest: "{{ openvpn_dir }}/"
+  with_items:
+    - crt
+    - key
+  notify: restart openvpn
+
+- name: Copy TA key and CA certificate
+  copy:
+    src: "{{ openvpn_client_certs_dir }}/{{ item }}"
+    dest: "{{ openvpn_dir }}/"
+  with_items:
+    - ca.crt
+    - ta.key
+  notify: restart openvpn
+
+...

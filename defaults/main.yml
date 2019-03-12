@@ -1,0 +1,13 @@
+---
+
+openvpn_enable:
+  server: false
+  client: false
+
+openvpn_server:
+openvpn_clients: []
+
+openvpn_subnet_cidr: "10.8.0.0/24"
+openvpn_server_proto: "tcp"
+openvpn_server_port: 1194
+...
