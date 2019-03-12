@@ -1,7 +1,16 @@
 ---
-- name: restart openvpn
+# NOTE - the OpenVPN RPM contains units for openvpn-client and openvpn-server
+# but these don't appear to be usable on first go.
+
+- name: restart openvpn server
   service:
-    name: "openvpn@{{ inventory_hostname }}"
+    name: "openvpn@{{ inventory_hostname }}.service"
+    enabled: yes
+    state: restarted
+
+- name: restart openvpn clients
+  service:
+    name: "openvpn@*.service"
     enabled: yes
     state: restarted
 ...

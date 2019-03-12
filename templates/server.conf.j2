@@ -310,4 +310,8 @@ verb 3
 
 # Notify the client that when the server restarts so it
 # can automatically reconnect.
+{% if openvpn_server_proto == 'udp' %}
 explicit-exit-notify 1
+{% else %}
+explicit-exit-notify 0
+{% endif %}

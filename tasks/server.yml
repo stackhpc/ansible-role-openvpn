@@ -1,12 +1,18 @@
 ---
 
+- set_fact:
+    openvpn_subnet_cidr: "{{ openvpn_subnet_cidr | ipsubnet(subnet_submask, server_idx) }}"
+  vars:
+    server_idx: "{{ openvpn_servers.index(inventory_hostname) }}"
+    subnet_submask: "{{ openvpn_subnet_cidr | ipaddr('prefix') + 4 }}"
+
 - name: Install Easy-RSA on server
   package:
     name: easy-rsa
 
 - name: Ensure OpenVPN Easy-RSA directory exists
   file:
-    path: "{{ easyrsa_dir }}"
+    path: "{{ openvpn_easyrsa_dir }}"
     state: directory
     owner: root
     group: openvpn
@@ -14,14 +20,14 @@
 
 - name: Find all Easy-RSA directories
   find:
-    paths: "{{ easyrsa_install_path }}" 
+    paths: "{{ openvpn_easyrsa_install_path }}" 
     file_type: directory
     recurse: yes
   register: easyrsa_dirs
 
 - name: Create Easy-RSA directory tree under OpenVPN directory
   file:
-    path: "{{ easyrsa_dir }}/{{ item.path | relpath(easyrsa_install_path) }}"
+    path: "{{ openvpn_easyrsa_dir }}/{{ item.path | relpath(openvpn_easyrsa_install_path) }}"
     directory_mode: yes
     state: directory
     owner: root
@@ -31,7 +37,7 @@
 
 - name: Find all Easy-RSA files
   find:
-    paths: "{{ easyrsa_install_path }}" 
+    paths: "{{ openvpn_easyrsa_install_path }}" 
     file_type: file
     recurse: yes
   register: easyrsa
@@ -41,7 +47,7 @@
     directory_mode: yes
     remote_src: yes 
     src: "{{ item.path }}"
-    dest: "{{ easyrsa_dir }}/{{ item.path | relpath(easyrsa_install_path) }}"
+    dest: "{{ openvpn_easyrsa_dir }}/{{ item.path | relpath(openvpn_easyrsa_install_path) }}"
     owner: "{{ item.pw_name }}"
     group: "{{ item.gr_name }}"
     mode: "{{ item.mode }}"
@@ -50,48 +56,48 @@
 - name: Initialise PKI 
   command: "./easyrsa init-pki"
   args:
-    chdir: "{{ easyrsa_dir }}"
-    creates: "{{ easyrsa_dir }}/pki"
+    chdir: "{{ openvpn_easyrsa_dir }}"
+    creates: "{{ openvpn_easyrsa_dir }}/pki"
   register: easyrsa_init
   ignore_errors: yes
 
 - name: Build CA
   shell: echo 'Easy-RSA CA' | ./easyrsa build-ca nopass 
   args:
-    chdir: "{{ easyrsa_dir }}"
-    creates: "{{ easyrsa_dir }}/pki/ca.crt"
+    chdir: "{{ openvpn_easyrsa_dir }}"
+    creates: "{{ openvpn_easyrsa_dir }}/pki/ca.crt"
   ignore_errors: yes
 
 - name: Build OpenVPN server credentials
-  shell: "./easyrsa build-server-full {{ openvpn_server }} nopass"
+  shell: "./easyrsa build-server-full {{ inventory_hostname }} nopass"
   args:
-    chdir: "{{ easyrsa_dir }}"
-    creates: "{{ easyrsa_dir }}/pki/reqs/{{ openvpn_server }}.req"
+    chdir: "{{ openvpn_easyrsa_dir }}"
+    creates: "{{ openvpn_easyrsa_dir }}/pki/reqs/{{ inventory_hostname }}.req"
   ignore_errors: yes
 
 - name: Prepare clients
   shell: "./easyrsa build-client-full {{ item }} nopass"
   args:
-    chdir: "{{ easyrsa_dir }}"
-    creates: "{{ easyrsa_dir }}/pki/reqs/{{ item }}.req"
-  with_items: "{{ openvpn_clients }}"
+    chdir: "{{ openvpn_easyrsa_dir }}"
+    creates: "{{ openvpn_easyrsa_dir }}/pki/reqs/{{ item }}.req"
+  with_items: "{{ openvpn_clients | difference([inventory_hostname]) }}"
   ignore_errors: yes
 
 - name: Does DH exist?
   stat:
-    path: "{{ easyrsa_dir }}/pki/dh.pem"
+    path: "{{ openvpn_easyrsa_dir }}/pki/dh.pem"
   register: dh
  
 - name: Generate DH
   shell: "./easyrsa gen-dh"
   args:
-    chdir: "{{ easyrsa_dir }}"
+    chdir: "{{ openvpn_easyrsa_dir }}"
   when: dh.stat.islnk is not defined
 
 - name: Copy CA and DH from their remote sources to remote OpenVPN dir
   copy:
     remote_src: yes
-    src: "{{ easyrsa_dir }}/pki/{{ item }}"
+    src: "{{ openvpn_easyrsa_dir }}/pki/{{ item }}"
     dest: "{{ openvpn_dir }}/"
   with_items:
     - dh.pem
@@ -105,20 +111,21 @@
 - name: Generate TA
   shell: "openvpn --genkey --secret {{ openvpn_dir }}/ta.key"
   when: ta.stat.islnk is not defined
-  notify: restart openvpn
+  notify: restart openvpn server
 
 - name: Copy server files to OpenVPN folder
   copy:
     remote_src: yes
-    src: "{{ easyrsa_dir }}/pki/{{ item.dir }}/{{ openvpn_server }}.{{ item.ext }}"
+    src: "{{ openvpn_easyrsa_dir }}/pki/{{ item.dir }}/{{ inventory_hostname }}.{{ item.ext }}"
     dest: "{{ openvpn_dir }}/" 
+    mode: preserve
   with_items: [{ dir: issued, ext: crt }, { dir: private, ext: key }]
 
 - name: Copy over server configuration
   template:
     src: server.conf.j2
-    dest: "{{ openvpn_dir }}/{{ openvpn_server }}.conf"
-  notify: restart openvpn
+    dest: "{{ openvpn_dir }}/{{ inventory_hostname }}.conf"
+  notify: restart openvpn server
 
 - name: Static IP configs for named hosts
   lineinfile:
@@ -126,32 +133,34 @@
     path: "{{ openvpn_dir }}/ccd/{{ item.1 }}"
     regexp: "^ifconfig-push"
     line: "ifconfig-push {{ openvpn_subnet_cidr | ipaddr('network') | ipmath(item.0 + 2) }} {{ openvpn_subnet_cidr | ipaddr('network') | ipmath(1) }}" 
-  with_indexed_items: "{{ openvpn_clients }}"
-  notify: restart openvpn
+  with_indexed_items: "{{ openvpn_clients | difference([inventory_hostname]) }}"
+  notify: restart openvpn server
 
 - name: Ensure local client certs dir exists
   become: no
   local_action:
     module: file
-    path: "{{ openvpn_client_certs_dir }}"
+    path: "{{ openvpn_client_certs_dir }}/{{ inventory_hostname }}"
     state: directory
 
 - name: Fetch client files
   fetch:
-    src: "{{ easyrsa_dir }}/pki/{{ item.0.dir }}/{{ item.1 }}.{{ item.0.ext }}"
-    dest: "{{ openvpn_client_certs_dir }}/" 
+    src: "{{ openvpn_easyrsa_dir }}/pki/{{ item.0.dir }}/{{ item.1 }}.{{ item.0.ext }}"
+    dest: "{{ openvpn_client_certs_dir }}/{{ inventory_hostname }}/" 
     flat: yes
   with_nested:
   - [{ dir: issued, ext: crt }, { dir: private, ext: key }]
-  - "{{ openvpn_clients }}"
+  - "{{ openvpn_clients | difference([inventory_hostname]) }}"
 
 - name: Fetch remaining certificates
   fetch:
     src: "{{ item }}"
-    dest: "{{ openvpn_client_certs_dir }}/" 
+    dest: "{{ openvpn_client_certs_dir }}/{{ inventory_hostname }}/" 
     flat: yes
   with_items:
-  - "{{ easyrsa_dir }}/pki/ca.crt"
+  - "{{ openvpn_easyrsa_dir }}/pki/ca.crt"
   - "{{ openvpn_dir }}/ta.key"
+
+- meta: flush_handlers
 
 ...

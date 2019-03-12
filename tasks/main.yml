@@ -1,10 +1,4 @@
 ---
-- name: Determine server and client flags
-  set_fact:
-    openvpn_enable:
-      server: "{{ inventory_hostname == openvpn_server }}"
-      client: "{{ inventory_hostname in openvpn_clients }}"
-
 - name: centos, RHEL | Install EPEL
   package:
     name: epel-release
@@ -16,7 +10,12 @@
     update_cache: yes
 
 - include_tasks: server.yml
-  when: openvpn_enable.server
+  when: inventory_hostname in openvpn_servers
 
 - include_tasks: client.yml
-  when: openvpn_enable.client
+  when:
+    - inventory_hostname in openvpn_clients 
+    - inventory_hostname != openvpn_server 
+  loop: "{{ openvpn_servers }}"
+  loop_control:
+    loop_var: openvpn_server

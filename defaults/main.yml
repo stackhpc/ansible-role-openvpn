@@ -1,13 +1,17 @@
 ---
 
-openvpn_enable:
-  server: false
-  client: false
-
-openvpn_server:
+openvpn_servers: []
 openvpn_clients: []
 
-openvpn_subnet_cidr: "10.8.0.0/24"
+openvpn_subnet_cidr: "10.8.0.0/16"
 openvpn_server_proto: "tcp"
 openvpn_server_port: 1194
+
+
+openvpn_dir: "/etc/openvpn"
+openvpn_client_certs_dir: "{{ playbook_dir }}/openvpn-client-certs"
+openvpn_easyrsa_dir: "{{ openvpn_dir }}/easy-rsa"
+openvpn_easyrsa_version: 3
+openvpn_easyrsa_install_path: "/usr/share/easy-rsa/{{ openvpn_easyrsa_version }}"
+
 ...

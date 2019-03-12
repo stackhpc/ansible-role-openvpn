@@ -34,13 +34,13 @@ dev tun
 # UDP server?  Use the same setting as
 # on the server.
 ;proto tcp
-proto udp
+proto {{ openvpn_server_proto }}
 
 # The hostname/IP and port of the server.
 # You can have multiple remote entries
 # to load balance between the servers.
-{% for server in groups['openvpn-server'] %}
-remote {{ hostvars[server]['ansible_host'] }} 1194
+{% for server in openvpn_servers %}
+remote {{ hostvars[server]['ansible_host'] }} {{ openvpn_server_port }}
 {% endfor %}
 ;remote my-server-2 1194
 
