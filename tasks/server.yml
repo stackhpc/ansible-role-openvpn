@@ -170,6 +170,12 @@
   - "{{ openvpn_easyrsa_dir }}/pki/ca.crt"
   - "{{ openvpn_dir }}/ta.key"
 
+- name: Enable IP forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: 1
+    sysctl_set: yes
+
 - meta: flush_handlers
 
 ...
