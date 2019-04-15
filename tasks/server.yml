@@ -164,7 +164,7 @@
 - name: Fetch remaining certificates
   fetch:
     src: "{{ item }}"
-    dest: "{{ openvpn_client_certs_dir }}/{{ inventory_hostname }}/" 
+    dest: "{{ openvpn_client_certs_dir }}/{{ inventory_hostname }}/"
     flat: yes
   with_items:
   - "{{ openvpn_easyrsa_dir }}/pki/ca.crt"
