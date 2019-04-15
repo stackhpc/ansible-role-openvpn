@@ -39,9 +39,7 @@ proto {{ openvpn_server_proto }}
 # The hostname/IP and port of the server.
 # You can have multiple remote entries
 # to load balance between the servers.
-{% for server in openvpn_servers %}
-remote {{ hostvars[server]['ansible_host'] }} {{ openvpn_server_port }}
-{% endfor %}
+remote {{ hostvars[openvpn_server]['ansible_host'] }} {{ openvpn_server_port }}
 ;remote my-server-2 1194
 
 # Choose a random host from the remote
