@@ -35,10 +35,11 @@
     value: 1
     sysctl_set: yes
 
-- name: Enable openvpn client
+- name: Enable and start openvpn client
   service:
     name: "openvpn@{{ openvpn_server }}"
     enabled: yes
+    state: started
 
 - meta: flush_handlers
 
