@@ -136,6 +136,15 @@
   with_indexed_items: "{{ openvpn_clients | difference([inventory_hostname]) }}"
   notify: restart openvpn server
 
+- name: Make client subnet reachable by server
+  lineinfile:
+    create: yes
+    path: "{{ openvpn_dir }}/ccd/{{ item }}"
+    regexp: "^iroute"
+    line: "iroute {{ hostvars[item]['ansible_default_ipv4']['network'] }} {{ hostvars[item]['ansible_default_ipv4']['netmask'] }}"
+  with_items: "{{ openvpn_clients | difference([inventory_hostname]) }}"
+  notify: restart openvpn server
+
 - name: Ensure local client certs dir exists
   become: no
   local_action:
@@ -155,11 +164,17 @@
 - name: Fetch remaining certificates
   fetch:
     src: "{{ item }}"
-    dest: "{{ openvpn_client_certs_dir }}/{{ inventory_hostname }}/" 
+    dest: "{{ openvpn_client_certs_dir }}/{{ inventory_hostname }}/"
     flat: yes
   with_items:
   - "{{ openvpn_easyrsa_dir }}/pki/ca.crt"
   - "{{ openvpn_dir }}/ta.key"
+
+- name: Enable IP forwarding
+  sysctl:
+    name: net.ipv4.ip_forward
+    value: 1
+    sysctl_set: yes
 
 - meta: flush_handlers
 
