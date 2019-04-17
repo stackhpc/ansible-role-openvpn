@@ -1,21 +1,28 @@
 ---
-- name: centos, RHEL | Install EPEL
-  package:
-    name: epel-release
-  when: ansible_os_family == "RedHat" or ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
+- block:
+  - name: centos, RHEL | Install EPEL
+    package:
+      name: epel-release
+    when: ansible_os_family == "RedHat" or ansible_distribution == 'CentOS' or ansible_distribution == 'Red Hat Enterprise Linux'
 
-- name: Install common packages
-  package:
-    name: openvpn
-    update_cache: yes
+  - name: Install common packages
+    package:
+      name: openvpn
+      update_cache: yes
 
-- include_tasks: server.yml
-  when: inventory_hostname in openvpn_servers
+  - include_tasks: server.yml
+    when: inventory_hostname in openvpn_servers
 
-- include_tasks: client.yml
+  - include_tasks: client.yml
+    when:
+      - inventory_hostname in openvpn_clients
+      - inventory_hostname != openvpn_server
+    loop: "{{ openvpn_servers }}"
+    loop_control:
+      loop_var: openvpn_server
   when:
-    - inventory_hostname in openvpn_clients 
-    - inventory_hostname != openvpn_server 
-  loop: "{{ openvpn_servers }}"
-  loop_control:
-    loop_var: openvpn_server
+    - inventory_hostname in openvpn_clients or inventory_hostname in openvpn_servers
+
+- include_tasks: hosts.yml
+  when:
+    - inventory_hostname in openvpn_subnet_clients
