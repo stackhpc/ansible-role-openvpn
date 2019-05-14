@@ -267,7 +267,7 @@ cipher AES-256-CBC
 
 # The maximum number of concurrently connected
 # clients we want to allow.
-;max-clients 100
+max-clients {{ openvpn_clients | count }}
 
 # It's a good idea to reduce the OpenVPN
 # daemon's privileges after initialization.
