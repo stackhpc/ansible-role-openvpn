@@ -23,6 +23,10 @@
   when:
     - inventory_hostname in openvpn_clients or inventory_hostname in openvpn_servers
 
+- meta: flush_handlers
+
+# Define routes via the local VPN endpoints,
+# for hosts not directly involved in the VPN connectivity.
 - include_tasks: hosts.yml
   when:
     - inventory_hostname in openvpn_subnet_clients
