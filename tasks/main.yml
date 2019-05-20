@@ -29,4 +29,5 @@
 # for hosts not directly involved in the VPN connectivity.
 - include_tasks: hosts.yml
   when:
-    - inventory_hostname in openvpn_subnet_clients
+    - inventory_hostname not in openvpn_clients
+    - inventory_hostname not in openvpn_servers
