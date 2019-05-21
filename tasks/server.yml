@@ -1,10 +1,12 @@
 ---
 
 - set_fact:
-    openvpn_subnet_cidr: "{{ openvpn_subnet_cidr | ipsubnet(subnet_submask, server_idx) }}"
+    openvpn_tunnel_cidr: "{{ openvpn_tunnel_cidr | ipsubnet(subnet_submask, server_idx) }}"
+    # Make the port defined for this server available as a fact to other hosts
+    openvpn_server_port: "{{ openvpn_server_port }}"
   vars:
     server_idx: "{{ openvpn_servers.index(inventory_hostname) }}"
-    subnet_submask: "{{ openvpn_subnet_cidr | ipaddr('prefix') + 4 }}"
+    subnet_submask: "{{ openvpn_tunnel_cidr | ipaddr('prefix') + 4 }}"
 
 - name: Install Easy-RSA on server
   package:
@@ -132,7 +134,7 @@
     create: yes
     path: "{{ openvpn_dir }}/ccd/{{ item.1 }}"
     regexp: "^ifconfig-push"
-    line: "ifconfig-push {{ openvpn_subnet_cidr | ipaddr('network') | ipmath(item.0 + 2) }} {{ openvpn_subnet_cidr | ipaddr('network') | ipmath(1) }}" 
+    line: "ifconfig-push {{ openvpn_tunnel_cidr | ipaddr('network') | ipmath(item.0 + 2) }} {{ openvpn_tunnel_cidr | ipaddr('network') | ipmath(1) }}" 
   with_indexed_items: "{{ openvpn_clients | difference([inventory_hostname]) }}"
   notify: restart openvpn server
 
@@ -141,7 +143,10 @@
     create: yes
     path: "{{ openvpn_dir }}/ccd/{{ item }}"
     regexp: "^iroute"
-    line: "iroute {{ hostvars[item]['ansible_default_ipv4']['network'] }} {{ hostvars[item]['ansible_default_ipv4']['netmask'] }}"
+    line: "iroute {{ remote_net }} {{ remote_mask }}"
+  vars:
+    remote_net: "{{ hostvars[item]['openvpn_intra_ipv4']['network'] }}"
+    remote_mask: "{{ hostvars[item]['openvpn_intra_ipv4']['netmask'] }}"
   with_items: "{{ openvpn_clients | difference([inventory_hostname]) }}"
   notify: restart openvpn server
 

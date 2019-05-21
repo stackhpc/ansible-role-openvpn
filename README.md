@@ -26,7 +26,7 @@ Role Variables
 
 `openvpn_clients`: List of hostnames of clients.
 
-`openvpn_subnet_cidr`: OpenVPN tunnel network subnet.  The OpenVPN servers
+`openvpn_tunnel_cidr`: OpenVPN tunnel network subnet.  The OpenVPN servers
   will create sub-subnets from this range.  The OpenVPN servers each take
   the first IP address of their allocated subnet.
   The default value is `10.8.0.0/24`
@@ -38,6 +38,8 @@ Role Variables
   OpenVPN server.
   The default value is `1194`
 
+`openvpn_intra_if`: If the internal network to propagate is not the default
+  gateway, it can be defined using its network interface name instead.
 
 Dependencies
 ------------
