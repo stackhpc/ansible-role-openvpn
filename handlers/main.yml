@@ -10,7 +10,8 @@
 
 - name: restart openvpn clients
   service:
-    name: "openvpn@*.service"
+    name: "openvpn@{{ item }}.service"
     enabled: yes
     state: restarted
+  with_items: "{{ openvpn_servers | difference([inventory_hostname]) }}"
 ...

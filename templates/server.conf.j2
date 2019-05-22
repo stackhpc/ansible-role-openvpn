@@ -97,7 +97,7 @@ dh dh.pem
 # Each client will be able to reach the server
 # on 10.8.0.1. Comment this line out if you are
 # ethernet bridging. See the man page for more info.
-server {{ openvpn_subnet_cidr | ipaddr('network') }} {{ openvpn_subnet_cidr | ipaddr('netmask') }}
+server {{ openvpn_tunnel_cidr | ipaddr('network') }} {{ openvpn_tunnel_cidr | ipaddr('netmask') }}
 
 # Maintain a record of client <-> virtual IP address
 # associations in this file.  If OpenVPN goes down or
@@ -137,7 +137,7 @@ ifconfig-pool-persist ipp.txt
 # to know to route the OpenVPN client
 # address pool (10.8.0.0/255.255.255.0)
 # back to the OpenVPN server.
-push "route {{ ansible_default_ipv4.network }} {{ ansible_default_ipv4.netmask }}"
+push "route {{ openvpn_intra_ipv4.network }} {{ openvpn_intra_ipv4.netmask }}"
 
 # To assign specific IP addresses to specific
 # clients or if a connecting client has a private
@@ -161,7 +161,7 @@ push "route {{ ansible_default_ipv4.network }} {{ ansible_default_ipv4.netmask }
 
 client-config-dir ccd
 {% for item in openvpn_clients %}
-route {{ hostvars[item]['ansible_default_ipv4']['network'] }} {{ hostvars[item]['ansible_default_ipv4']['netmask'] }}
+route {{ hostvars[item].openvpn_intra_ipv4.network }} {{ hostvars[item].openvpn_intra_ipv4.netmask }}
 {% endfor %}
 
 # EXAMPLE: Suppose you want to give
@@ -267,7 +267,7 @@ cipher AES-256-CBC
 
 # The maximum number of concurrently connected
 # clients we want to allow.
-;max-clients 100
+max-clients {{ openvpn_clients | count }}
 
 # It's a good idea to reduce the OpenVPN
 # daemon's privileges after initialization.

@@ -32,7 +32,7 @@
 - name: Enable IP forwarding
   sysctl:
     name: net.ipv4.ip_forward
-    value: 1
+    value: "1"
     sysctl_set: yes
 
 - name: Enable and start openvpn client
@@ -40,7 +40,5 @@
     name: "openvpn@{{ openvpn_server }}"
     enabled: yes
     state: started
-
-- meta: flush_handlers
 
 ...
