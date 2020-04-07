@@ -1,5 +1,6 @@
 ---
 galaxy_info:
+  role_name: openvpn
   description: >
     For a VPN server and list of clients, install OpenVPN and Easy-RSA
     packages and generate server and client configurations for OpenVPN
