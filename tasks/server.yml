@@ -19,6 +19,16 @@
     owner: root
     group: openvpn
     mode: 0750
+  when: ansible_os_family != "Debian"
+
+- name: Ensure OpenVPN Easy-RSA directory exists
+  file:
+    path: "{{ openvpn_easyrsa_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0750
+  when: ansible_os_family == "Debian"
 
 - name: Find all Easy-RSA directories
   find:
@@ -36,6 +46,18 @@
     group: openvpn
     mode: 0750
   with_items: "{{ easyrsa_dirs.files }}"
+  when: ansible_os_family != "Debian"
+
+- name: Create Easy-RSA directory tree under OpenVPN directory
+  file:
+    path: "{{ openvpn_easyrsa_dir }}/{{ item.path | relpath(openvpn_easyrsa_install_path) }}"
+    directory_mode: yes
+    state: directory
+    owner: root
+    group: root
+    mode: 0750
+  with_items: "{{ easyrsa_dirs.files }}"
+  when: ansible_os_family == "Debian"
 
 - name: Find all Easy-RSA files
   find:
