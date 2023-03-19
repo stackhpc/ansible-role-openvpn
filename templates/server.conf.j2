@@ -275,7 +275,12 @@ max-clients {{ openvpn_clients | count }}
 # You can uncomment this out on
 # non-Windows systems.
 user nobody
+{% if ansible_os_family == "Debian" %}
+group nogroup
+{% else %}
 group nobody
+{% endif %}
+
 
 # The persist options will try to avoid
 # accessing certain resources on restart
